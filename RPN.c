@@ -3,47 +3,47 @@
 #include <math.h>
 #include <string.h>
 
-typedef struct stack_int
+typedef struct Stack_double
 {
 	double data;
-	struct stack_int *next;
-} stack_i;
+	struct Stack_double *next;
+} StackOfDouble;
 
-typedef struct stack_char
+typedef struct Stack_char
 {
 	char data;
-	struct stack_char *next;
-} stack_c;
+	struct Stack_char *next;
+} StackOfChar;
 
-void push(stack_i **ps, double x)
+void pushDouble(StackOfDouble **stack, double value)
 {
-	stack_i *tmp = malloc(sizeof(stack_i));
-	if (tmp != NULL)
+	StackOfDouble *tempStack = malloc(sizeof(StackOfDouble));
+	if (tempStack != NULL)
 	{
-		tmp -> next = *ps;
-		tmp -> data = x;
-		*ps = tmp;
+		tempStack -> next = *stack;
+		tempStack -> data = value;
+		*stack = tempStack;
 	}
 }
 
-void push_char(stack_c **ps, char x)
+void pushChar(StackOfChar **stack, char value)
 {
-	stack_c *tmp = malloc(sizeof(stack_i));
-	if (tmp != NULL)
+	StackOfChar *tempStack = malloc(sizeof(StackOfDouble));
+	if (tempStack != NULL)
 	{
-		tmp -> next = *ps;
-		tmp -> data = x;
-		*ps = tmp;
+		tempStack -> next = *stack;
+		tempStack -> data = value;
+		*stack = tempStack;
 	}
 }
 
-double pop(stack_i **ps)
+double popDouble(StackOfDouble **stack)
 {
-	if (*ps != NULL)
+	if (*stack != NULL)
 	{
 		double result;
-		stack_i *out = *ps;
-		*ps = (*ps) -> next;
+		StackOfDouble *out = *stack;
+		*stack = (*stack) -> next;
 		result = out -> data;
 		free(out);
 		return result;
@@ -51,13 +51,13 @@ double pop(stack_i **ps)
 	return 0;
 }
 
-char pop_char(stack_c **ps)
+char popChar(StackOfChar **stack)
 {
-	if (*ps != NULL)
+	if (*stack != NULL)
 	{
 		char result;
-		stack_c *out = *ps;
-		*ps = (*ps) -> next;
+		StackOfChar *out = *stack;
+		*stack = (*stack) -> next;
 		result = out -> data;
 		free(out);
 		return result;
@@ -65,15 +65,15 @@ char pop_char(stack_c **ps)
 	return 0;
 }
 
-double peek(const stack_i *ps)
+double peekDouble(const StackOfDouble *stack)
 {
-	if (ps != NULL) return ps -> data;
+	if (stack != NULL) return stack -> data;
 	return 0;
 }
 
-int peek_char(const stack_c *ps)
+int peekChar(const StackOfChar *stack)
 {
-	if (ps != NULL) return ps -> data;
+	if (stack != NULL) return stack -> data;
 	return 0;
 }
 
@@ -88,15 +88,15 @@ int isDigit(char digit)
 	return 0;
 }
 
-int isOp(char op)
+int isOperation(char op)
 {
 	if ((op == '+') || (op == '-') || (op == '/') || (op == '*') || (op == '^')) return 1;
 	return 0;
 }
 
-int getPriority(char c)
+int getPriority(char op)
 {
-	switch (c)
+	switch (op)
 	{
 	case '(': return 1;
 	case '+': return 2;
@@ -116,64 +116,64 @@ int main()
 	input = fopen("input.txt", "r");
 	output = fopen("output.txt", "w");
 	poland = fopen("poland.txt", "w");
-	stack_c *opstack = NULL;
-	stack_i *valstack = NULL;
-	char c;
-	fscanf(input, "%c", &c);
+	StackOfChar *stackOfOperations = NULL;
+	StackOfDouble *stackOfValues = NULL;
+	char symbol;
 
 	// ПЕРЕВОД В ОПЗ
 
+	fscanf(input, "%c", &symbol);
 	while (!feof(input))
 	{
-		if (c == '\n') break;
-		if (c == ' ')
+		if (symbol == '\n') break;
+		if (symbol == ' ')
 		{
-			fscanf(input, "%c", &c);
+			fscanf(input, "%c", &symbol);
 			continue;
 		}
-		int Neg = 0;
-		if (c == '-')
+		int isUnaryMinus = 0;
+		if (symbol == '-')
 		{
-			if (ftell(input) == 1) Neg = 1;
+			if (ftell(input) == 1) isUnaryMinus = 1;
 			else
 			{
 				char tmp;
 				fseek(input, -1, SEEK_CUR);
 				fscanf(input, "%c", &tmp);
-				if ((tmp == '(') || (isOp(tmp))) Neg = 1;
+				if ((tmp == '(') || (isOperation(tmp))) isUnaryMinus = 1;
 			}
 		}
-		if (isDigit(c) || Neg) fprintf(poland, "%c", c);
+		if (isDigit(symbol) || isUnaryMinus) fprintf(poland, "%c", symbol);
 		else
 		{
 			fprintf(poland, " ");
-			if (isOp(c))
+			if (isOperation(symbol))
 			{
-				while (!((opstack == NULL) || (getPriority(c) > getPriority(peek_char(opstack)))))
-					fprintf(poland, "%c ", pop_char(&opstack));
+				while (!((stackOfOperations == NULL) || (getPriority(symbol) > getPriority(peekChar(stackOfOperations)))))
+					fprintf(poland, "%c ", popChar(&stackOfOperations));
 
-				if ((opstack == NULL) || (getPriority(c) > getPriority(peek_char(opstack))))
-					push_char(&opstack, c);
+				if ((stackOfOperations == NULL) || (getPriority(symbol) > getPriority(peekChar(stackOfOperations))))
+					pushChar(&stackOfOperations, symbol);
 			}
-			else if (c == '(')
+			else if (symbol == '(')
 			{
-				push_char(&opstack, c);
+				pushChar(&stackOfOperations, symbol);
 			}
 			else
 			{
-				while (peek_char(opstack) != '(')
+				while (peekChar(stackOfOperations) != '(')
 				{
-					fprintf(poland, "%c ", pop_char(&opstack));
+					fprintf(poland, "%c ", popChar(&stackOfOperations));
 				}
-				pop_char(&opstack);
+				popChar(&stackOfOperations);
 			}
 		}
-		fscanf(input, "%c", &c);
+		fscanf(input, "%c", &symbol);
 	}
-	if (opstack != NULL) fprintf(poland, " ");
-	while (opstack != NULL)
+	if (stackOfOperations != NULL) fprintf(poland, " ");
+	while (stackOfOperations != NULL)
 	{
-		fprintf(poland, "%c ", pop_char(&opstack));
+		fprintf(poland, "%c ", popChar(&stackOfOperations));
 	}
 	fclose(poland);
 
@@ -181,37 +181,37 @@ int main()
 
 	poland = fopen("poland.txt", "r");
 
-	fscanf(poland, "%c", &c);
+	fscanf(poland, "%c", &symbol);
 
 	while (!feof(poland))
 	{
-		if (c == ' ')
+		if (symbol == ' ')
 		{
-			fscanf(poland, "%c", &c);
+			fscanf(poland, "%c", &symbol);
 			continue;
 		}
 		double value = 0;
 		double val1, val2;
-		int Neg = 0;
-		if (ftell(poland) == 1) Neg = 1;
+		int isUnaryMinus = 0;
+		if (ftell(poland) == 1) isUnaryMinus = 1;
 		else
 		{
 			char tmp;
 			fscanf(poland, "%c", &tmp);
 			fseek(poland, -1, SEEK_CUR);
-			if (isDigit(tmp)) Neg = 1;
+			if (isDigit(tmp)) isUnaryMinus = 1;
 		}
-		if (isDigit(c) || Neg)
+		if (isDigit(symbol) || isUnaryMinus)
 		{
 			fseek(poland, -1, SEEK_CUR);
 			fscanf(poland, "%lf", &value);
-			push(&valstack, value);
+			pushDouble(&stackOfValues, value);
 		}
 		else
 		{
-			val1 = pop(&valstack);
-			val2 = pop(&valstack);
-			switch (c)
+			val1 = popDouble(&stackOfValues);
+			val2 = popDouble(&stackOfValues);
+			switch (symbol)
 			{
 			case '+': value = val2 + val1; break;
 			case '-': value = val2 - val1; break;
@@ -219,11 +219,11 @@ int main()
 			case '/': value = val2 / val1; break;
 			case '^': value = pow(val2, val1); break;
 			}
-			push(&valstack, value);
+			pushDouble(&stackOfValues, value);
 		}
-		fscanf(poland, "%c", &c);
+		fscanf(poland, "%c", &symbol);
 	}
-	fprintf(output, "%.15lE", pop(&valstack));
+	fprintf(output, "%.15lE", popDouble(&stackOfValues));
 
 	fclose(input);
 	fclose(output);
